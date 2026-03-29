@@ -1,13 +1,17 @@
 import { useState } from 'react'
 import SnakeGame from './SnakeGame.tsx'
 import RocketGame from './RocketGame.tsx'
+import ContraGame from './ContraGame.tsx'
+import Contra3DGame from './Contra3DGame.tsx'
 import './App.css'
 
-type GameType = 'snake' | 'rockets'
+type GameType = 'snake' | 'rockets' | 'contra' | 'contra3d'
 
 const gameLabels: Record<GameType, string> = {
   snake: 'Snake',
   rockets: 'Blasting Rockets',
+  contra: 'Contra',
+  contra3d: 'Contra 3D',
 }
 
 function App() {
@@ -34,7 +38,10 @@ function App() {
           ))}
         </nav>
       </header>
-      {activeGame === 'snake' ? <SnakeGame /> : <RocketGame />}
+      {activeGame === 'snake' && <SnakeGame />}
+      {activeGame === 'rockets' && <RocketGame />}
+      {activeGame === 'contra' && <ContraGame />}
+      {activeGame === 'contra3d' && <Contra3DGame />}
     </div>
   )
 }

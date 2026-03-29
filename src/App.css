@@ -132,6 +132,21 @@
   width: min(70vmin, 460px);
 }
 
+.board--contra {
+  width: min(78vmin, 640px);
+  aspect-ratio: 11 / 6;
+}
+
+.contra-3d {
+  width: min(82vmin, 720px);
+  aspect-ratio: 16 / 9;
+  border-radius: 18px;
+  overflow: hidden;
+  border: 2px solid var(--border);
+  box-shadow: var(--shadow);
+  background: radial-gradient(circle at 20% 20%, #1a2c28, #0a0f0f 70%);
+}
+
 .cell {
   border-radius: 6px;
   background: rgba(0, 0, 0, 0.04);
@@ -173,6 +188,30 @@
 
 .cell--reward-spread {
   background: #60a5fa;
+}
+
+.cell--contra {
+  border-radius: 4px;
+}
+
+.cell--contra-player {
+  background: #22c55e;
+}
+
+.cell--contra-enemy {
+  background: #f97316;
+}
+
+.cell--contra-bullet {
+  background: #38bdf8;
+}
+
+.cell--contra-power {
+  background: #e879f9;
+}
+
+.cell--contra-power-spread {
+  background: #818cf8;
 }
 
 .board__overlay {
