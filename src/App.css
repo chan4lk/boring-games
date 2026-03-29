@@ -1,0 +1,286 @@
+.app {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 40px 48px 24px;
+}
+
+@media (max-width: 900px) {
+  .app {
+    padding: 28px 20px 16px;
+  }
+}
+
+.app__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.app__eyebrow {
+  margin: 0 0 8px;
+  font-size: 12px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.app__tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.tab {
+  border-radius: 999px;
+  padding: 8px 16px;
+  font: 600 13px/1 var(--sans);
+  border: 1px solid var(--border);
+  background: var(--bg);
+  cursor: pointer;
+}
+
+.tab--active {
+  color: var(--text-h);
+  background: var(--accent-bg);
+  border-color: var(--accent-border);
+}
+
+.tab--inactive {
+  color: var(--text);
+}
+
+.snake {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  padding: 24px 0 56px;
+}
+
+@media (max-width: 900px) {
+  .snake {
+    padding: 16px 0 40px;
+  }
+}
+
+.snake__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.snake__eyebrow {
+  margin: 0 0 8px;
+  font-size: 12px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.snake__stats {
+  display: grid;
+  grid-auto-flow: column;
+  gap: 12px;
+}
+
+.snake__stats div {
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 14px;
+  min-width: 96px;
+}
+
+.snake__stats span {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+
+.snake__stats strong {
+  font-size: 20px;
+  color: var(--text-h);
+}
+
+.snake__board {
+  position: relative;
+  display: flex;
+  justify-content: center;
+}
+
+.board {
+  width: min(72vmin, 520px);
+  aspect-ratio: 1;
+  background: var(--code-bg);
+  border: 2px solid var(--border);
+  border-radius: 18px;
+  padding: 12px;
+  display: grid;
+  gap: 2px;
+  box-shadow: var(--shadow);
+  box-sizing: border-box;
+}
+
+.board--rocket {
+  width: min(70vmin, 460px);
+}
+
+.cell {
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.04);
+}
+
+@media (prefers-color-scheme: dark) {
+  .cell {
+    background: rgba(255, 255, 255, 0.05);
+  }
+}
+
+.cell--snake {
+  background: rgba(170, 59, 255, 0.3);
+}
+
+.cell--head {
+  background: var(--accent);
+}
+
+.cell--food {
+  background: #ff7a59;
+}
+
+.cell--player {
+  background: #2dd4bf;
+}
+
+.cell--enemy {
+  background: #f87171;
+}
+
+.cell--bullet {
+  background: #fbbf24;
+}
+
+.cell--reward {
+  background: #a78bfa;
+}
+
+.cell--reward-spread {
+  background: #60a5fa;
+}
+
+.board__overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.78);
+  border-radius: 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  text-align: center;
+}
+
+@media (prefers-color-scheme: dark) {
+  .board__overlay {
+    background: rgba(0, 0, 0, 0.7);
+  }
+}
+
+.board__overlay p {
+  font-size: 22px;
+  font-weight: 500;
+  color: var(--text-h);
+  margin: 0;
+}
+
+.snake__controls {
+  display: grid;
+  gap: 16px;
+  justify-items: center;
+}
+
+.controls {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+button {
+  font: 600 14px/1 var(--sans);
+  color: var(--text-h);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 16px;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+button:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow);
+}
+
+button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.controls__pad {
+  display: grid;
+  grid-template-areas:
+    '. up .'
+    'left down right';
+  gap: 10px;
+  align-items: center;
+  justify-items: center;
+}
+
+.controls__pad--wide {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.pad {
+  width: 54px;
+  height: 48px;
+  padding: 0;
+  border-radius: 12px;
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  font-size: 18px;
+}
+
+.pad--up {
+  grid-area: up;
+}
+
+.pad--left {
+  grid-area: left;
+}
+
+.pad--down {
+  grid-area: down;
+}
+
+.pad--right {
+  grid-area: right;
+}
+
+.snake__hint {
+  margin: 0;
+  color: var(--text);
+  font-size: 14px;
+}
+
+.snake__hint code {
+  font-size: 13px;
+}
