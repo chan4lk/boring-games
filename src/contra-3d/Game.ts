@@ -11,6 +11,7 @@ import { CombatSystem } from './systems/CombatSystem'
 import { PowerUpSystem } from './systems/PowerUpSystem'
 import { ParticleSystem } from './systems/ParticleSystem'
 import { CheatSystem } from './CheatSystem'
+import { Effects } from './rendering/Effects'
 import type { GameCallbacks, GameScreen, UIState, PlayerEntity } from './types'
 import { PLAYER_START_LIVES, PLAYER_MAX_HEALTH, EXTRA_LIFE_SCORE, SCROLL_OFFSCREEN_MARGIN } from './constants'
 
@@ -27,6 +28,7 @@ export class Game {
   readonly combatSystem: CombatSystem
   readonly powerUpSystem: PowerUpSystem
   readonly particles: ParticleSystem
+  readonly effects: Effects
   readonly cheats: CheatSystem
   private callbacks: GameCallbacks
   private player: PlayerEntity | null = null
@@ -49,6 +51,7 @@ export class Game {
     this.combatSystem = new CombatSystem(this)
     this.powerUpSystem = new PowerUpSystem(this)
     this.particles = new ParticleSystem(this.scene.scene)
+    this.effects = new Effects()
     this.cheats = new CheatSystem(this)
 
     this.engine = new Engine((delta, time) => this.update(delta, time))
@@ -119,6 +122,11 @@ export class Game {
     this.entities.removeOffscreen(SCROLL_OFFSCREEN_MARGIN, this.levels.scrollOffset)
     this.scene.updateParallax(this.levels.scrollOffset)
     this.scene.render()
+
+    const shakeOffset = this.effects.update(delta)
+    this.scene.camera.position.x += shakeOffset.offsetX
+    this.scene.camera.position.y += shakeOffset.offsetY
+    this.scene.camera.lookAt(6 + this.levels.scrollOffset, 4, 0)
 
     if (this.player && !this.player.alive) {
       this.lives -= 1

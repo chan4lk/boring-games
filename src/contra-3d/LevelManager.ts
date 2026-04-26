@@ -1,6 +1,10 @@
 import type { Game } from './Game'
 import type { LevelConfig, EnemyType } from './types'
 import { LEVEL_1 } from './levels/Level1'
+import { LEVEL_2 } from './levels/Level2'
+import { LEVEL_3 } from './levels/Level3'
+import { LEVEL_4 } from './levels/Level4'
+import { LEVEL_5 } from './levels/Level5'
 
 export class LevelManager {
   private game: Game
@@ -14,7 +18,7 @@ export class LevelManager {
 
   constructor(game: Game) {
     this.game = game
-    this.levels = [LEVEL_1]
+    this.levels = [LEVEL_1, LEVEL_2, LEVEL_3, LEVEL_4, LEVEL_5]
   }
 
   totalLevels(): number {
