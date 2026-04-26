@@ -55,7 +55,9 @@ export class LevelManager {
   update(delta: number, time: number): void {
     if (!this.currentConfig || this.completed) return
 
-    this.scrollOffset += this.currentConfig.scrollSpeed * delta
+    if (!this.bossSpawned) {
+      this.scrollOffset += this.currentConfig.scrollSpeed * delta
+    }
 
     const wavesAtDistance = this.currentConfig.waves.filter(w => {
       const alreadySpawned = this.spawnTimers.includes(this.currentConfig!.waves.indexOf(w))
