@@ -24,8 +24,6 @@ export type EnemyType = 'soldier' | 'runner' | 'turret' | 'flying'
 
 export type PowerUpKind = 'spread' | 'rate' | 'weapon'
 
-export type Direction = { x: number; y: number }
-
 export type Entity = {
   id: number
   mesh: THREE.Object3D
