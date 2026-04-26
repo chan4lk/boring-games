@@ -5,6 +5,8 @@ import { LEVEL_2 } from './levels/Level2'
 import { LEVEL_3 } from './levels/Level3'
 import { LEVEL_4 } from './levels/Level4'
 import { LEVEL_5 } from './levels/Level5'
+import { createBossEntity } from './entities/Boss'
+import type { MusicKey } from './audio/music'
 
 export class LevelManager {
   private game: Game
@@ -15,6 +17,7 @@ export class LevelManager {
   private waveIndex = 0
   private spawnTimers: number[] = []
   private bossSpawned = false
+  private currentBossId: number | null = null
 
   constructor(game: Game) {
     this.game = game
@@ -42,7 +45,11 @@ export class LevelManager {
         scrollFactor: l.scrollFactor,
       }))
     )
-    this.game.audio.playMusic(config.music as any)
+    this.game.audio.playMusic(config.music as MusicKey)
+    // Update floor color to match level
+    const bg = config.background
+    const groundColor = parseInt(bg.groundColor.replace('#', ''), 16)
+    this.game.environment.setFloorColor(groundColor)
   }
 
   update(delta: number, time: number): void {
@@ -63,8 +70,35 @@ export class LevelManager {
 
     if (!this.bossSpawned && this.currentConfig.boss && this.scrollOffset >= this.currentConfig.totalDistance - 10) {
       this.bossSpawned = true
-      this.completed = true
-      this.game.screen = 'levelComplete'
+      // Pause scrolling during boss fight
+      const boss = createBossEntity(
+        this.game.entities.nextId(),
+        this.currentConfig.boss.type,
+        this.currentConfig.boss.health,
+        this.scrollOffset + 10,
+        4
+      )
+      this.currentBossId = boss.id
+      this.game.entities.add(boss)
+      // Emit state to show boss health bar
+      this.game.emitState()
+    }
+
+    // Check if boss is still alive
+    if (this.bossSpawned && this.currentBossId !== null) {
+      const bossEntity = this.game.entities.all.find(e => e.id === this.currentBossId)
+      if (!bossEntity || !bossEntity.alive) {
+        // Boss defeated!
+        this.currentBossId = null
+        this.completed = true
+        this.game.screen = 'levelComplete'
+        this.game.emitState()
+      }
+    }
+
+    // Update boss health in UI state
+    const bossAlive = this.currentBossId !== null ? this.game.entities.all.find(e => e.id === this.currentBossId) : null
+    if (bossAlive && bossAlive.alive && this.currentConfig?.boss) {
       this.game.emitState()
     }
   }
@@ -80,6 +114,10 @@ export class LevelManager {
         }, i * group.interval * 1000)
       }
     }
+  }
+
+  getCurrentBossId(): number | null {
+    return this.currentBossId
   }
 
   resetToCheckpoint(): void {

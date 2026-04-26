@@ -1,6 +1,6 @@
 import * as THREE from 'three'
 import type { Game } from '../Game'
-import type { PlayerEntity } from '../types'
+import type { PlayerEntity, BulletEntity } from '../types'
 import { PLAYER_SPEED, WORLD_WIDTH, WORLD_HEIGHT, BASE_FIRE_COOLDOWN, BULLET_SPEED } from '../constants'
 import { createPlayerEntity } from '../entities/Player'
 
@@ -68,7 +68,7 @@ export class PlayerSystem {
       this.game.scene.scene.add(mesh)
 
       const vel = baseDir.clone().multiplyScalar(BULLET_SPEED)
-      const bullet: import('../types').BulletEntity = {
+      const bullet: BulletEntity = {
         id: this.game.entities.nextId(),
         mesh,
         position: { x: mesh.position.x, y: mesh.position.y },
