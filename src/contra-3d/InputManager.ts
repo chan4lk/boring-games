@@ -7,6 +7,7 @@ export class InputManager {
   private groundPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0)
   private domElement: HTMLElement
   private handlers: (() => void)[] = []
+  private hasPointer = false
   aimTarget = new THREE.Vector3(10, 4, 0)
 
   constructor(domElement: HTMLElement) {
@@ -23,12 +24,7 @@ export class InputManager {
       const rect = this.domElement.getBoundingClientRect()
       this.pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1
       this.pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1
-      this.raycaster.setFromCamera(this.pointer, this.getCamera())
-      const intersect = new THREE.Vector3()
-      this.raycaster.ray.intersectPlane(this.groundPlane, intersect)
-      if (Number.isFinite(intersect.x)) {
-        this.aimTarget = intersect
-      }
+      this.hasPointer = true
     }
     const onPointerDown = () => this.keys.add('shoot')
     const onPointerUp = () => this.keys.delete('shoot')
@@ -51,11 +47,26 @@ export class InputManager {
   }
 
   private getCamera(): THREE.Camera {
-    return (this.domElement as any).__camera || new THREE.PerspectiveCamera()
+    return (this.domElement as HTMLElement & { __camera?: THREE.Camera }).__camera || new THREE.PerspectiveCamera()
+  }
+
+  // Re-project the cursor onto the Z=0 plane every frame so the aim point
+  // tracks the scrolling camera instead of freezing at the last mousemove.
+  updateAim(fallbackX: number, fallbackY: number): void {
+    if (!this.hasPointer) {
+      this.aimTarget.set(fallbackX, fallbackY, 0)
+      return
+    }
+    this.raycaster.setFromCamera(this.pointer, this.getCamera())
+    const intersect = new THREE.Vector3()
+    this.raycaster.ray.intersectPlane(this.groundPlane, intersect)
+    if (Number.isFinite(intersect.x)) {
+      this.aimTarget.copy(intersect)
+    }
   }
 
   setCamera(camera: THREE.Camera): void {
-    ;(this.domElement as any).__camera = camera
+    ;(this.domElement as HTMLElement & { __camera?: THREE.Camera }).__camera = camera
   }
 
   isDown(key: string): boolean {

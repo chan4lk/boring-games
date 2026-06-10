@@ -16,7 +16,11 @@ export class CheatSystem {
     },
   ]
 
-  constructor(private game: Game) {}
+  private game: Game
+
+  constructor(game: Game) {
+    this.game = game
+  }
 
   update(time: number): void {
     if (this.lastActivated && time - this.activatedTime > 3) {

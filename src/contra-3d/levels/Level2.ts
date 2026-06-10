@@ -2,13 +2,23 @@ import type { LevelConfig } from './LevelData'
 
 export const LEVEL_2: LevelConfig = {
   id: 'level2', name: 'Military Base', totalDistance: 140, scrollSpeed: 4.5,
-  background: { fogColor: '#1a1a1a', fogNear: 4, fogFar: 24, skyColor: '#111111', groundColor: '#333333', parallaxLayers: [
-    { color: '#222222', depth: 1, scrollFactor: 0.1 }, { color: '#2a2a2a', depth: 2, scrollFactor: 0.15 }, { color: '#333333', depth: 3, scrollFactor: 0.2 },
+  background: { fogColor: '#b6bcc2', fogNear: 13, fogFar: 44, skyColor: '#c9ced4', groundColor: '#5d6166', parallaxLayers: [
+    { color: '#787f86', depth: 1, scrollFactor: 0.1 }, { color: '#8a9097', depth: 2, scrollFactor: 0.15 }, { color: '#9aa1a7', depth: 3, scrollFactor: 0.2 },
   ]},
   terrain: [
     { x: 0, width: 40, height: 0.5, y: 0 }, { x: 45, width: 15, height: 0.5, y: 0 },
     { x: 65, width: 10, height: 0.5, y: 0 }, { x: 80, width: 25, height: 0.5, y: 0 },
     { x: 110, width: 30, height: 0.5, y: 0 },
+  ],
+  decorations: [
+    { type: 'crate', x: 6, y: 0.5 }, { type: 'crate', x: 10, y: 0.5 },
+    { type: 'rock', x: 15, y: 0.5 }, { type: 'crate', x: 22, y: 0.5 },
+    { type: 'crate', x: 28, y: 0.5 }, { type: 'rock', x: 35, y: 0.5 },
+    { type: 'crate', x: 48, y: 0.5 }, { type: 'crate', x: 52, y: 0.5 },
+    { type: 'rock', x: 55, y: 0.5 }, { type: 'crate', x: 68, y: 0.5 },
+    { type: 'crate', x: 72, y: 0.5 }, { type: 'rock', x: 85, y: 0.5 },
+    { type: 'crate', x: 90, y: 0.5 }, { type: 'crate', x: 95, y: 0.5 },
+    { type: 'rock', x: 115, y: 0.5 }, { type: 'crate', x: 120, y: 0.5 },
   ],
   waves: [
     { atDistance: 8, enemies: [{ type: 'soldier', count: 3, interval: 1.2 }] },

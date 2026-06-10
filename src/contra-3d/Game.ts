@@ -39,6 +39,8 @@ export class Game {
   score = 0
   lives = PLAYER_START_LIVES
   currentLevel = 0
+  pickupMessage: string | null = null
+  private pickupTime = 0
 
   constructor(container: HTMLDivElement, callbacks: GameCallbacks) {
     this.callbacks = callbacks
@@ -54,10 +56,27 @@ export class Game {
     this.powerUpSystem = new PowerUpSystem(this)
     this.particles = new ParticleSystem(this.scene.scene)
     this.effects = new Effects()
+    this.particles.setEffects(this.effects)
     this.environment = new Environment(this.scene)
     this.cheats = new CheatSystem(this)
 
     this.engine = new Engine((delta, time) => this.update(delta, time))
+
+    this.onKeyDown = this.onKeyDown.bind(this)
+    window.addEventListener('keydown', this.onKeyDown)
+  }
+
+  private onKeyDown(e: KeyboardEvent): void {
+    this.cheats.recordKey(e.key)
+    const key = e.key.toLowerCase()
+    if (key === 'p') {
+      if (this.screen === 'playing') this.pause()
+      else if (this.screen === 'paused') this.resume()
+    } else if (key === 'r') {
+      if (this.screen === 'playing' || this.screen === 'paused' || this.screen === 'gameover') {
+        this.restart()
+      }
+    }
   }
 
   start(): void {
@@ -66,6 +85,7 @@ export class Game {
   }
 
   destroy(): void {
+    window.removeEventListener('keydown', this.onKeyDown)
     this.engine.stop()
     this.input.destroy()
     this.scene.destroy()
@@ -73,6 +93,8 @@ export class Game {
   }
 
   startLevel(levelIndex: number): void {
+    this.entities.clear()
+    this.particles.clear()
     this.currentLevel = levelIndex
     this.player = this.playerSystem.createPlayer()
     this.levels.load(levelIndex)
@@ -99,6 +121,8 @@ export class Game {
     this.lives = PLAYER_START_LIVES
     this.entities.clear()
     this.particles.clear()
+    this.environment.clearTerrain()
+    this.environment.clearDecorations()
     this.scene.reset()
     this.startLevel(this.currentLevel)
   }
@@ -107,6 +131,8 @@ export class Game {
     this.screen = 'menu'
     this.entities.clear()
     this.particles.clear()
+    this.environment.clearTerrain()
+    this.environment.clearDecorations()
     this.scene.reset()
     this.emitState()
   }
@@ -115,21 +141,29 @@ export class Game {
     if (this.screen !== 'playing') return
 
     this.cheats.update(time)
+    if (this.pickupMessage && time - this.pickupTime > 2) {
+      this.pickupMessage = null
+      this.emitState()
+    }
     this.playerSystem.update(delta, time, this.player!)
     this.enemySystem.update(delta, time)
     this.combatSystem.update(delta, time)
-    this.powerUpSystem.update(delta, time)
+    this.powerUpSystem.update(delta)
     this.particles.update(delta)
-    this.levels.update(delta, time)
+    this.levels.update(delta)
     this.entities.updatePositions(delta)
     this.entities.removeOffscreen(SCROLL_OFFSCREEN_MARGIN, this.levels.scrollOffset)
     this.scene.updateParallax(this.levels.scrollOffset)
-    this.scene.render()
+    this.scene.updateLighting(this.levels.scrollOffset)
+    this.environment.updateScroll(this.levels.scrollOffset)
 
+    const scroll = this.levels.scrollOffset
     const shakeOffset = this.effects.update(delta)
-    this.scene.camera.position.x += shakeOffset.offsetX
-    this.scene.camera.position.y += shakeOffset.offsetY
-    this.scene.camera.lookAt(6 + this.levels.scrollOffset, 4, 0)
+    this.scene.camera.position.set(-6 + scroll + shakeOffset.offsetX, 6 + shakeOffset.offsetY, 12)
+    this.scene.camera.lookAt(6 + scroll, 4, 0)
+    // Without a pointer, shoot straight ahead at the player's height
+    this.input.updateAim(scroll + 18, (this.player?.position.y ?? 3) + 1.0)
+    this.scene.render()
 
     if (this.player && !this.player.alive) {
       this.lives -= 1
@@ -145,6 +179,12 @@ export class Game {
 
   getPlayer(): PlayerEntity | null {
     return this.player
+  }
+
+  showPickup(message: string): void {
+    this.pickupMessage = message
+    this.pickupTime = performance.now() / 1000
+    this.emitState()
   }
 
   addScore(points: number): void {
@@ -183,6 +223,7 @@ export class Game {
         return bossEnemy?.maxHealth ?? 0
       })(),
       cheatActive: this.cheats.lastActivated,
+      pickupMessage: this.pickupMessage,
     }
   }
 }

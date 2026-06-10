@@ -226,7 +226,7 @@ function resolveCollisions(
   )
 
   let rewards = [...state.rewards]
-  let upgrades = { ...state.upgrades }
+  const upgrades = { ...state.upgrades }
 
   rewards = rewards.filter((reward) => {
     if (reward.x === state.player.x && reward.y === state.player.y) {

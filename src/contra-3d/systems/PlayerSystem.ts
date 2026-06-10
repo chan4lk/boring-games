@@ -1,14 +1,18 @@
 import * as THREE from 'three'
 import type { Game } from '../Game'
-import type { PlayerEntity, BulletEntity } from '../types'
-import { PLAYER_SPEED, WORLD_WIDTH, WORLD_HEIGHT, BASE_FIRE_COOLDOWN, BULLET_SPEED } from '../constants'
+import type { PlayerEntity } from '../types'
+import { PLAYER_SPEED, WORLD_WIDTH, WORLD_HEIGHT, WEAPONS } from '../constants'
 import { createPlayerEntity } from '../entities/Player'
-
-const bulletGeo = new THREE.CylinderGeometry(0.08, 0.08, 0.35, 12)
-const bulletMat = new THREE.MeshStandardMaterial({ color: 0xfbbf24, emissive: 0xf59e0b, emissiveIntensity: 0.9 })
+import { BulletPatterns } from '../weapons/BulletPatterns'
 
 export class PlayerSystem {
-  constructor(private game: Game) {}
+  private game: Game
+  private patterns: BulletPatterns
+
+  constructor(game: Game) {
+    this.game = game
+    this.patterns = new BulletPatterns(game.entities)
+  }
 
   createPlayer(): PlayerEntity {
     const player = createPlayerEntity(this.game.entities.nextId(), 2, 3)
@@ -28,7 +32,9 @@ export class PlayerSystem {
 
     const input = this.game.input
     const move = input.getMovement()
-    if (move.x !== 0 || move.y !== 0) {
+    const moving = move.x !== 0 || move.y !== 0
+
+    if (moving) {
       const len = Math.sqrt(move.x * move.x + move.y * move.y)
       move.x /= len
       move.y /= len
@@ -36,14 +42,48 @@ export class PlayerSystem {
       player.position.y += move.y * PLAYER_SPEED * delta
     }
 
-    player.position.x = Math.max(0, Math.min(player.position.x, WORLD_WIDTH - 2))
+    // Clamp relative to the scrolling camera; the left edge carries the player forward
+    const scroll = this.game.levels.scrollOffset
+    player.position.x = Math.max(scroll + 0.5, Math.min(player.position.x, scroll + WORLD_WIDTH - 2))
     player.position.y = Math.max(0, Math.min(player.position.y, WORLD_HEIGHT - 1.5))
-    player.mesh.position.set(player.position.x, player.position.y + 0.6, 0)
+
+    // Idle breathing bob
+    const bob = Math.sin(time * 4) * 0.008
+    player.mesh.position.set(player.position.x, player.position.y + 0.6 + bob, 0)
 
     const aimDir = new THREE.Vector3()
       .subVectors(input.aimTarget, player.mesh.position)
       .setZ(0).normalize()
     player.mesh.lookAt(player.mesh.position.clone().add(aimDir))
+
+    // Leg swing animation
+    const leftLeg = player.mesh.userData.leftLeg as THREE.Mesh | undefined
+    const rightLeg = player.mesh.userData.rightLeg as THREE.Mesh | undefined
+    if (leftLeg && rightLeg) {
+      if (moving) {
+        const swing = Math.sin(time * 10) * 0.5
+        leftLeg.rotation.x = swing
+        rightLeg.rotation.x = -swing
+      } else {
+        leftLeg.rotation.x *= 0.9
+        rightLeg.rotation.x *= 0.9
+      }
+    }
+
+    // Subtle arm sway when moving
+    const leftArm = player.mesh.userData.leftArm as THREE.Mesh | undefined
+    const rightArm = player.mesh.userData.rightArm as THREE.Mesh | undefined
+    if (leftArm && rightArm) {
+      if (moving) {
+        const armSwing = Math.sin(time * 10) * 0.15
+        leftArm.rotation.z = armSwing
+        rightArm.rotation.z = -armSwing
+      } else {
+        // Idle arm rest
+        leftArm.rotation.z *= 0.9
+        rightArm.rotation.z *= 0.9
+      }
+    }
 
     if (input.isShooting()) {
       this.shoot(time, player)
@@ -51,35 +91,19 @@ export class PlayerSystem {
   }
 
   private shoot(time: number, player: PlayerEntity): void {
-    const cooldown = BASE_FIRE_COOLDOWN / player.fireRateLevel
+    const def = WEAPONS[player.weapon]
+    const cooldown = def.fireRate / player.fireRateLevel
     if (time - player.lastFireTime < cooldown) return
     player.lastFireTime = time
 
-    const spread = player.spreadLevel
-    const offsets = spread === 1 ? [0] : spread === 2 ? [-0.3, 0, 0.3] : [-0.6, -0.3, 0, 0.3, 0.6]
+    // Direction from the muzzle itself so bullets pass exactly through the
+    // cursor point instead of converging on a line from the player's feet
+    const muzzle = player.mesh.position.clone().add(new THREE.Vector3(0, 0.45, 0.1))
     const baseDir = new THREE.Vector3()
-      .subVectors(this.game.input.aimTarget, player.mesh.position)
+      .subVectors(this.game.input.aimTarget, muzzle)
       .setZ(0).normalize()
+    const origin = muzzle.add(baseDir.clone().multiplyScalar(1.2))
 
-    for (const off of offsets) {
-      const mesh = new THREE.Mesh(bulletGeo, bulletMat)
-      mesh.rotation.z = Math.PI / 2
-      mesh.position.copy(player.mesh.position).add(new THREE.Vector3(1.4, off, 0.1))
-      this.game.scene.scene.add(mesh)
-
-      const vel = baseDir.clone().multiplyScalar(BULLET_SPEED)
-      const bullet: BulletEntity = {
-        id: this.game.entities.nextId(),
-        mesh,
-        position: { x: mesh.position.x, y: mesh.position.y },
-        velocity: { x: vel.x, y: vel.y },
-        alive: true,
-        health: 1, maxHealth: 1,
-        type: 'bullet',
-        damage: 1,
-        fromPlayer: true,
-      }
-      this.game.entities.add(bullet)
-    }
+    this.patterns.spawnBullets(player.weapon, origin, baseDir, true, player.spreadLevel)
   }
 }

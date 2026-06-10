@@ -14,6 +14,7 @@ const initialUIState: UIState = {
   currentLevel: 1, totalLevels: 0,
   bossHealth: 0, bossMaxHealth: 0,
   cheatActive: null,
+  pickupMessage: null,
 }
 
 export default function Contra3DGame() {
@@ -27,6 +28,7 @@ export default function Contra3DGame() {
 
     const game = new Game(container, { onStateChange: setUI })
     gameRef.current = game
+    ;(window as unknown as { __contra3d?: Game }).__contra3d = game
     game.start()
 
     return () => {
@@ -71,7 +73,7 @@ export default function Contra3DGame() {
         {(ui.screen === 'paused') && <PauseMenu onResume={handleResume} onRestart={handleRestart} onQuit={handleQuit} />}
         {ui.screen === 'gameover' && <GameOver score={ui.score} currentLevel={ui.currentLevel} onRestart={handleRestart} onQuit={handleQuit} />}
         {ui.screen === 'levelComplete' && (
-          <LevelComplete score={ui.score} currentLevel={ui.currentLevel} totalLevels={ui.totalLevels} onNext={handleNextLevel} />
+          <LevelComplete score={ui.score} currentLevel={ui.currentLevel} totalLevels={ui.totalLevels} onNext={handleNextLevel} onQuit={handleQuit} />
         )}
       </div>
 

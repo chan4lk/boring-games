@@ -3,9 +3,10 @@ type LevelCompleteProps = {
   currentLevel: number
   totalLevels: number
   onNext: () => void
+  onQuit: () => void
 }
 
-export function LevelComplete({ score, currentLevel, totalLevels, onNext }: LevelCompleteProps) {
+export function LevelComplete({ score, currentLevel, totalLevels, onNext, onQuit }: LevelCompleteProps) {
   return (
     <div style={{
       position: 'absolute', inset: 0,
@@ -20,8 +21,9 @@ export function LevelComplete({ score, currentLevel, totalLevels, onNext }: Leve
       {currentLevel < totalLevels ? (
         <button onClick={onNext} style={{ marginTop: 16, padding: '10px 32px', fontSize: 16, background: '#2dd4bf', color: '#000', border: 'none', borderRadius: 6, cursor: 'pointer', fontWeight: 'bold' }}>Next Level</button>
       ) : (
-        <div style={{ marginTop: 16 }}>
+        <div style={{ marginTop: 16, textAlign: 'center' }}>
           <p style={{ fontSize: 20, color: '#fbbf24' }}>You Win!</p>
+          <button onClick={onQuit} style={{ marginTop: 8, padding: '10px 32px', fontSize: 16, background: '#2dd4bf', color: '#000', border: 'none', borderRadius: 6, cursor: 'pointer', fontWeight: 'bold' }}>Main Menu</button>
         </div>
       )}
     </div>

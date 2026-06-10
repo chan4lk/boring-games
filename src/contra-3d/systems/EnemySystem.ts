@@ -8,7 +8,11 @@ const enemyBulletGeo = new THREE.CylinderGeometry(0.06, 0.06, 0.25, 8)
 const enemyBulletMat = new THREE.MeshStandardMaterial({ color: 0xfca5a5, emissive: 0xef4444, emissiveIntensity: 0.5 })
 
 export class EnemySystem {
-  constructor(private game: Game) {}
+  private game: Game
+
+  constructor(game: Game) {
+    this.game = game
+  }
 
   spawn(type: EnemyType, x: number, y: number): void {
     const enemy = createEnemyEntity(this.game.entities.nextId(), type, x, y)

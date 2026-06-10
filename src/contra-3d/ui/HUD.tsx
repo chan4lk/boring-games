@@ -2,13 +2,19 @@ import type { UIState } from '../types'
 
 type HUDProps = UIState & { cheatActive: string | null }
 
-export function HUD({ score, lives, health, maxHealth, weapon, spreadLevel, fireRateLevel, currentLevel, totalLevels, bossHealth, bossMaxHealth, cheatActive }: HUDProps) {
+const WEAPON_HUD_COLORS: Record<string, string> = {
+  machinegun: '#fbbf24', spread: '#a5b4fc', laser: '#f9a8d4', fire: '#fdba74', rapid: '#6ee7b7',
+}
+
+export function HUD({ score, lives, health, maxHealth, weapon, spreadLevel, fireRateLevel, currentLevel, totalLevels, bossHealth, bossMaxHealth, cheatActive, pickupMessage }: HUDProps) {
   const weaponName = weapon.charAt(0).toUpperCase() + weapon.slice(1)
+  const weaponColor = WEAPON_HUD_COLORS[weapon] ?? '#fff'
   return (
     <div style={{
       position: 'absolute', top: 0, left: 0, right: 0,
       display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
       padding: '12px 20px', pointerEvents: 'none', fontFamily: 'monospace', color: '#fff',
+      textShadow: '0 1px 3px rgba(0,0,0,0.8), 0 0 8px rgba(0,0,0,0.4)',
     }}>
       <div>
         <div style={{ fontSize: 14, opacity: 0.6 }}>SCORE</div>
@@ -16,7 +22,7 @@ export function HUD({ score, lives, health, maxHealth, weapon, spreadLevel, fire
       </div>
       <div style={{ textAlign: 'center' }}>
         <div style={{ fontSize: 14, opacity: 0.6 }}>LIVES</div>
-        <div style={{ fontSize: 24, fontWeight: 'bold' }}>{'♥'.repeat(lives)}</div>
+        <div style={{ fontSize: 24, fontWeight: 'bold' }}>{lives > 6 ? `♥ × ${lives}` : '♥'.repeat(lives)}</div>
       </div>
       <div style={{ textAlign: 'center' }}>
         <div style={{ fontSize: 14, opacity: 0.6 }}>LEVEL</div>
@@ -33,7 +39,7 @@ export function HUD({ score, lives, health, maxHealth, weapon, spreadLevel, fire
             borderRadius: 6, transition: 'width 0.2s',
           }} />
         </div>
-        <div style={{ fontSize: 14, marginTop: 4, opacity: 0.8 }}>{weaponName} S{spreadLevel} R{fireRateLevel}</div>
+        <div style={{ fontSize: 16, fontWeight: 'bold', marginTop: 4, color: weaponColor }}>{weaponName} S{spreadLevel} R{fireRateLevel}</div>
       </div>
       {bossHealth > 0 && (
         <div style={{ position: 'absolute', bottom: 60, left: '50%', transform: 'translateX(-50%)', width: 300 }}>
@@ -41,6 +47,15 @@ export function HUD({ score, lives, health, maxHealth, weapon, spreadLevel, fire
           <div style={{ width: '100%', height: 8, background: '#333', borderRadius: 4, overflow: 'hidden' }}>
             <div style={{ width: `${(bossHealth / bossMaxHealth) * 100}%`, height: '100%', background: '#ef4444', borderRadius: 4 }} />
           </div>
+        </div>
+      )}
+      {pickupMessage && (
+        <div style={{
+          position: 'absolute', top: 90, left: '50%', transform: 'translateX(-50%)',
+          fontSize: 26, fontWeight: 'bold', color: weaponColor,
+          textShadow: '0 2px 6px rgba(0,0,0,0.7)', letterSpacing: 2,
+        }}>
+          {pickupMessage}
         </div>
       )}
       {cheatActive && (

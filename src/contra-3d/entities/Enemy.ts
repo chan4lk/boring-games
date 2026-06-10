@@ -10,8 +10,8 @@ const armorColors: Record<EnemyType, number> = {
 
 export function createEnemyMesh(type: EnemyType): THREE.Group {
   const group = new THREE.Group()
-  const primary = new THREE.MeshStandardMaterial({ color: primaryColors[type] })
-  const armor = new THREE.MeshStandardMaterial({ color: armorColors[type] })
+  const primary = new THREE.MeshStandardMaterial({ color: primaryColors[type], roughness: 0.5, metalness: 0.2 })
+  const armor = new THREE.MeshStandardMaterial({ color: armorColors[type], roughness: 0.7, metalness: 0.1 })
 
   if (type === 'turret') {
     const base = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.8, 0.4, 8), armor)
@@ -39,12 +39,20 @@ export function createEnemyMesh(type: EnemyType): THREE.Group {
       group.add(leg)
     }
   }
+  // Cast shadows
+  group.traverse(child => {
+    if (child instanceof THREE.Mesh) {
+      child.castShadow = true
+    }
+  })
+
   return group
 }
 
 const healthMap: Record<EnemyType, number> = { soldier: 1, runner: 1, turret: 3, flying: 2 }
 const scoreMap: Record<EnemyType, number> = { soldier: 15, runner: 10, turret: 30, flying: 25 }
 const fireIntervalMap: Record<EnemyType, number> = { soldier: 2, runner: 0, turret: 1.5, flying: 3 }
+const hitRadiusMap: Record<EnemyType, number> = { soldier: 1.1, runner: 1.1, turret: 1.0, flying: 0.9 }
 
 export function createEnemyEntity(id: number, type: EnemyType, x: number, y: number): EnemyEntity {
   const mesh = createEnemyMesh(type)
@@ -62,5 +70,6 @@ export function createEnemyEntity(id: number, type: EnemyType, x: number, y: num
     fireTimer: Math.random() * fireIntervalMap[type],
     fireInterval: fireIntervalMap[type],
     scoreValue: scoreMap[type],
+    hitRadius: hitRadiusMap[type],
   }
 }

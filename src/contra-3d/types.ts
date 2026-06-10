@@ -16,6 +16,7 @@ export type UIState = {
   bossHealth: number
   bossMaxHealth: number
   cheatActive: string | null
+  pickupMessage: string | null
 }
 
 export type WeaponType = 'machinegun' | 'spread' | 'laser' | 'fire' | 'rapid'
@@ -33,6 +34,8 @@ export type Entity = {
   health: number
   maxHealth: number
   type: string
+  /** Collision radius around the mesh origin; defaults apply when omitted */
+  hitRadius?: number
 }
 
 export type BulletEntity = Entity & {
@@ -110,6 +113,7 @@ export type LevelConfig = {
     parallaxLayers: { color: string; depth: number; scrollFactor: number }[]
   }
   terrain: TerrainSegment[]
+  decorations?: { type: 'tree' | 'rock' | 'crate'; x: number; y: number; scale?: number }[]
   waves: WaveConfig[]
   powerUpDrops: { atDistance: number; weapon: WeaponType; position: [number, number] }[]
   boss: BossConfig | null

@@ -1,0 +1,134 @@
+version: 1
+plan:
+  name: 'Contra 3D visual polish v2 — fix build, background, floor, bloom'
+  max_concurrency: 2
+  max_consecutive_failures: 2
+  max_cycles: 5
+  verifier_config:
+    default_verifiers: [general]
+    audit_sample_rate: 0.0
+tasks:
+  - id: visual-polish-v2
+    title: 'land Contra 3D visual polish v2 on the worktree'
+    assigned_to: users-chandima-repos-codex-app--contra-3d-dev
+    verified_by: general
+    timeout_ms: 1800000
+    prompt: |
+      You are continuing the `contra-3d-visual-overhaul` work-in-progress on its own branch. The goal: make the visual overhaul actually shippable and visually polished, with a green build.
+
+      ## Workspace
+      Worktree path: `/Users/chandima/repos/codex-app/.worktrees/contra-3d-visual-overhaul`
+      Branch: `contra-3d-visual-overhaul` (1 commit on top of main, 17 modified files, 4 untracked new files)
+      **DO NOT merge to `main`. Commit on this branch only. DO NOT push.**
+
+      ## Read first (in this order)
+      1. The WIP review at `mavis scratchpad read mvs_c4a1dc3580f04b128e68d975e45bcb29` (or open `/Users/chandima/.mavis/scratchpads/mvs_c4a1dc3580f04b128e68d975e45bcb29/scratchpad.md`) — it has the file-level diff analysis and diagnosis of what's still broken.
+      2. `docs/superpowers/plans/2026-04-26-contra-3d-overhaul.md` — the design doc.
+      3. The 4 new untracked files in `src/contra-3d/rendering/`: `EnvironmentDecorations.ts`, `ParticleTextures.ts`, `PostProcessingManager.ts`, `ProceduralTextures.ts` — confirm they're all wired in (the WIP review says yes; double-check).
+      4. The most-modified files: `SceneManager.ts`, `Environment.ts`, `entities/Player.ts`, `systems/ParticleSystem.ts`, `levels/Level1.ts`, `Game.ts`.
+
+      ## Apply fixes IN THIS ORDER (build must pass before you can see any visual change)
+
+      ### Fix 1 — Unblock the build
+      Current state: `npm run build` (= `tsc -b && vite build`) FAILS with 14 errors total.
+
+      **4 NEW errors from this WIP** — `src/contra-3d/rendering/PostProcessingManager.ts:1-4`: TS2307 cannot find module `three/addons/postprocessing/{EffectComposer,RenderPass,UnrealBloomPass,OutputPass}`. Root cause: `three@0.183.2` ships addons as `.js` only (no `.d.ts`). Vite resolves them at runtime, but `tsc` with `moduleResolution: bundler` + `noUncheckedSideEffectImports` rejects the imports.
+      - **Fix**: add `src/three-addons.d.ts` that re-exports the four modules from their actual paths under `three/examples/jsm/postprocessing/`. Verify with `tsc -b` that the errors clear. Keep the shim minimal — only the 4 modules actually used.
+
+      **10 PRE-EXISTING errors** (also on main `9b78ab3`):
+      - 6× TS1294 (parameter properties blocked by `erasableSyntaxOnly: true`): `CheatSystem.ts:19`, `CombatSystem.ts:11`, `EnemySystem.ts:11`, `PlayerSystem.ts:11`, `PowerUpSystem.ts:14`, `BulletPatterns.ts:9` — convert `constructor(private x: T)` to explicit field declaration + assignment in the constructor body.
+      - 4× TS6133 (unused): `entities/Boss.ts:1` (THREE), `entities/Player.ts:3` (INVINCIBILITY_DURATION), `LevelManager.ts:17` (waveIndex), `systems/CombatSystem.ts:5` (phys) — remove the unused imports.
+
+      After these, `npm run build` and `npm run lint` must both pass with 0 errors.
+
+      ### Fix 2 — Replace the flat background slab
+      The parallax background planes are solid `MeshStandardMaterial` with `emissive=color` and no surface variation. The user's reference shot shows a "diagonal dark grey slab"; the WIP screenshot shows a "massive solid forest-green wall." The background is the biggest visual issue.
+
+      **Approach** (pick the simplest that looks good):
+      - **Option A (preferred)**: replace each parallax plane with a procedurally-textured plane — gradient sky → silhouette via canvas-generated texture. So the back wall reads as a layered sky/scene, not a flat slab.
+      - **Option B**: replace with a skydome (sphere with vertical gradient texture) behind everything.
+
+      Do NOT just change the color — that doesn't fix the "flat" problem. The slab must have visible surface variation.
+
+      ### Fix 3 — Make the floor read as grass, not charcoal
+      The procedural grass texture is wired into `Environment.createFloor()` but the screenshot shows the floor as black/charcoal.
+
+      **Diagnose first**:
+      - Confirm in code that the texture is being assigned to the material's `map` (not just `color` or another property) at runtime
+      - If texture is assigned correctly: lighting is the issue → check ambient/directional intensities, exposure, tone mapping. The floor must be visibly green/grass-textured, not pure black.
+      - If texture is NOT assigned correctly: fix the wiring.
+
+      Fix the right thing so the floor visibly shows green/grass texture in the screenshot.
+
+      ### Fix 4 — Make bloom and shadows actually visible
+      - **Bloom**: `UnrealBloomPass` is wired but `threshold: 0.8` is too high for this scene. Lower threshold to ~0.4, raise strength to ~0.6. Add at least one emissive element (light, decal, or material) that will trigger bloom.
+      - **Shadows**: `PCFShadowMap` enabled with 1024² mapSize and `shadow.bias = -0.001`. Shadows aren't visible in the screenshot. Try `PCFSoftShadowMap`, bump mapSize to 2048, set bias to `-0.0005` or remove it. Verify shadows visibly fall on the floor from player or trees.
+
+      ## Verify yourself (do all of these before committing)
+      1. `npm run build` from the worktree — must pass with 0 errors.
+      2. `npm run lint` from the worktree — must pass.
+      3. Start `npm run dev` in the background (logs to `/tmp/codex-v2-vite.log`, save the PID).
+      4. Use playwright MCP (`mavis mcp call playwright browser_navigate '{"url":"http://localhost:5173/boring-games/"}'` then `browser_click` the Contra 3D tab, `browser_take_screenshot '{"filename":"/tmp/v2-screenshot.png","fullPage":false}'`) to capture the scene.
+      5. Stop the dev server (`pkill -f vite`).
+      6. Visually inspect the screenshot — confirm the 4 issues above are actually fixed. If any still look broken, iterate before committing.
+
+      ## Commit
+      On the worktree branch (`contra-3d-visual-overhaul`), commit ALL changes (the original WIP's 4 new files + 17 modified files + your build/visual fixes) as:
+      - `feat: contra 3d visual overhaul v2 — fix build, background, floor, bloom`
+      - DO NOT merge to `main`
+      - DO NOT push (user reviews first)
+
+      ## Report back
+      Send to `mvs_c4a1dc3580f04b128e68d975e45bcb29`:
+      - Build status (pass/fail + error count)
+      - Lint status (pass/fail)
+      - For each of the 4 fixes: what you did, briefly (1 sentence each)
+      - Path to `/tmp/v2-screenshot.png`
+      - Commit hash
+      - Any issues you couldn't resolve
+
+      If you hit a hard blocker (e.g. one of the 4 fixes is technically infeasible in scope), report it explicitly and stop — do NOT silently skip a fix.
+
+    verify_prompt: |
+      Independently verify the Contra 3D visual polish v2 deliverable. **Do NOT modify any files** — read-only adversarial verification. Re-derive each check; do not trust the producer's report.
+
+      ## Setup
+      Worktree: `/Users/chandima/repos/codex-app/.worktrees/contra-3d-visual-overhaul`
+      Branch: `contra-3d-visual-overhaul`
+
+      ## Required checks
+
+      ### 1. Build (re-run, do not trust producer)
+      Run `npm run build` from the worktree. **Must exit 0 with 0 TS errors.** FAIL the verification if any TS error remains (especially any of the 4 `three/addons/...` import errors or the 10 pre-existing parameter-property / unused-import errors).
+
+      ### 2. Lint (re-run)
+      Run `npm run lint` from the worktree. **Must exit 0.**
+
+      ### 3. Visual verification (re-derive from a fresh screenshot)
+      Start `npm run dev` in the background (logs to `/tmp/codex-verify-vite.log`, save PID). Use playwright MCP to:
+      - `mavis mcp call playwright browser_navigate '{"url":"http://localhost:5173/boring-games/"}'`
+      - Click the "Contra 3D" tab
+      - Wait 2s for scene render
+      - `mavis mcp call playwright browser_take_screenshot '{"filename":"/tmp/verify-screenshot.png","fullPage":false}'`
+      Stop the dev server (`pkill -f vite`).
+
+      ### 4. Visual checks (each PASS/FAIL with description)
+      Use `mavis mcp call matrix describe_images` to compare your `/tmp/verify-screenshot.png` against:
+      - **Reference shot (the ugly state)**: `/var/folders/0t/5vqwj2zd5c72784hgg1vvgvw0000gn/T/TemporaryItems/NSIRD_screencaptureui_cgNiIo/Screenshot 2026-06-02 at 18.23.54.png`
+      - **WIP screenshot (before polish)**: `/Users/chandima/.mavis/agents/general/workspace/codex-wip-review/wip-screenshot.png`
+
+      Required improvements (each is a hard PASS/FAIL):
+      - (a) **Background no longer a flat solid wall** — must have texture, gradient, or be replaced with a skydome. If it still looks like a single untextured surface, FAIL.
+      - (b) **Floor is visibly green/grass-textured** (not charcoal/black). If the floor is still mostly dark, FAIL.
+      - (c) **At least one shadow is visible on the floor** (from player, tree, or prop). If no shadows are visible, FAIL.
+      - (d) **Bloom is visible on at least one bright element** (player, HUD, or emissive). If nothing is glowing, FAIL.
+      - (e) **No visual regressions vs the WIP screenshot** — player still renders, trees still render, decorations still render, UI still shows.
+
+      ## Report
+      Send to `mvs_c4a1dc3580f04b128e68d975e45bcb29`:
+      - Build status (exit code + error count)
+      - Lint status (exit code)
+      - Each visual check (a–e): PASS or FAIL with one-sentence description
+      - Path to `/tmp/verify-screenshot.png`
+      - **Overall verdict: PASS or FAIL**
+      - If FAIL: the specific things the producer needs to fix to make it pass

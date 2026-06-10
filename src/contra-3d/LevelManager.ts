@@ -14,8 +14,8 @@ export class LevelManager {
   private currentConfig: LevelConfig | null = null
   scrollOffset = 0
   private completed = false
-  private waveIndex = 0
   private spawnTimers: number[] = []
+  private spawnedDrops: number[] = []
   private bossSpawned = false
   private currentBossId: number | null = null
 
@@ -34,10 +34,12 @@ export class LevelManager {
     this.currentConfig = config
     this.scrollOffset = 0
     this.completed = false
-    this.waveIndex = 0
     this.spawnTimers = []
+    this.spawnedDrops = []
     this.bossSpawned = false
 
+    const bg = config.background
+    this.game.scene.setAtmosphere(bg.fogColor, bg.fogNear, bg.fogFar)
     this.game.scene.createBackgroundLayers(
       config.background.parallaxLayers.map(l => ({
         color: parseInt(l.color.replace('#', ''), 16),
@@ -46,13 +48,17 @@ export class LevelManager {
       }))
     )
     this.game.audio.playMusic(config.music as MusicKey)
-    // Update floor color to match level
-    const bg = config.background
+    // Update environment for level
     const groundColor = parseInt(bg.groundColor.replace('#', ''), 16)
+    this.game.environment.ensureFloor()
     this.game.environment.setFloorColor(groundColor)
+    this.game.environment.clearTerrain()
+    this.game.environment.clearDecorations()
+    this.game.environment.buildTerrain(config.terrain)
+    this.game.environment.buildDecorations(config.decorations ?? [])
   }
 
-  update(delta: number, time: number): void {
+  update(delta: number): void {
     if (!this.currentConfig || this.completed) return
 
     if (!this.bossSpawned) {
@@ -67,8 +73,15 @@ export class LevelManager {
     for (const wave of wavesAtDistance) {
       const idx = this.currentConfig.waves.indexOf(wave)
       this.spawnTimers.push(idx)
-      this.spawnWave(wave, time)
+      this.spawnWave(wave)
     }
+
+    this.currentConfig.powerUpDrops.forEach((drop, i) => {
+      if (!this.spawnedDrops.includes(i) && this.scrollOffset >= drop.atDistance) {
+        this.spawnedDrops.push(i)
+        this.game.powerUpSystem.spawn(this.scrollOffset + drop.position[0], drop.position[1], 'weapon', drop.weapon)
+      }
+    })
 
     if (!this.bossSpawned && this.currentConfig.boss && this.scrollOffset >= this.currentConfig.totalDistance - 10) {
       this.bossSpawned = true
@@ -77,8 +90,9 @@ export class LevelManager {
         this.game.entities.nextId(),
         this.currentConfig.boss.type,
         this.currentConfig.boss.health,
-        this.scrollOffset + 10,
-        4
+        this.scrollOffset + 14,
+        0,
+        this.currentConfig.boss.scoreValue
       )
       this.currentBossId = boss.id
       this.game.entities.add(boss)
@@ -105,14 +119,15 @@ export class LevelManager {
     }
   }
 
-  private spawnWave(wave: LevelConfig['waves'][0], _time: number): void {
-    const offset = 30
-    const yBase = 3 + Math.random() * 5
+  private spawnWave(wave: LevelConfig['waves'][0]): void {
     for (const group of wave.enemies) {
       for (let i = 0; i < group.count; i++) {
         setTimeout(() => {
-          const y = yBase + (Math.random() - 0.5) * 4
-          this.game.enemySystem.spawn(group.type as EnemyType, offset, y)
+          if (this.game.screen !== 'playing') return
+          // Spawn just past the right edge of the view, relative to current scroll
+          const x = this.scrollOffset + 30
+          const y = group.type === 'flying' ? 3 + Math.random() * 4 : 0
+          this.game.enemySystem.spawn(group.type as EnemyType, x, y)
         }, i * group.interval * 1000)
       }
     }
@@ -123,7 +138,11 @@ export class LevelManager {
   }
 
   resetToCheckpoint(): void {
-    this.scrollOffset = Math.max(0, this.scrollOffset - 15)
+    // Don't rewind inside the boss arena — scrolling is already paused and
+    // stacked rewinds would push the boss past the off-screen cull bound
+    if (!this.bossSpawned) {
+      this.scrollOffset = Math.max(0, this.scrollOffset - 15)
+    }
     this.completed = false
   }
 }

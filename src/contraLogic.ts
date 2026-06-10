@@ -246,7 +246,7 @@ function resolveCollisions(
   )
 
   let powerUps = [...state.powerUps]
-  let upgrades = { ...state.upgrades }
+  const upgrades = { ...state.upgrades }
 
   powerUps = powerUps.filter((power) => {
     if (power.x === state.player.x && power.y === state.player.y) {
